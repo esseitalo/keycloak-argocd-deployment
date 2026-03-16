@@ -1,0 +1,44 @@
+# Keycloak Configuration
+keycloak:
+  image:
+    repository: keycloak/keycloak
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: LoadBalancer
+    port: 8080
+    targetPort: 8080
+  
+  replicas: 1
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# PostgreSQL Configuration
+postgres:
+  enabled: true
+  image: postgres:15
+  port: 5432
+  username: keycloak
+  password: password123  # POC only - should use Secrets in production
+  database: keycloak
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+
+# Database connection settings
+database:
+  vendor: postgres
+  port: 5432
+  host: postgres-service  # Service name for PostgreSQL

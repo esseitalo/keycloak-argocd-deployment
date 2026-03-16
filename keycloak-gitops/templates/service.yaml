@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-service
+  labels:
+    app: keycloak
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+spec:
+  type: {{ .Values.keycloak.service.type }}
+  ports:
+  - port: {{ .Values.keycloak.service.port }}
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: keycloak

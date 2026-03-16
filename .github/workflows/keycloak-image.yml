@@ -1,0 +1,66 @@
+name: Keycloak Custom Image & GitOps
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'keycloak-custom-image/**'
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: keycloak-custom
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./keycloak-custom-image
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./keycloak-custom-image
+          push: true
+          tags: |
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Update GitOps Repository
+        run: |
+          # Configure git
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          # Update repository and tag in values.yaml
+          cd ../keycloak-gitops
+          
+          # Replace repository (using | as delimiter to handle slashes)
+          sed -i "s|repository: .*|repository: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}|g" values.yaml
+          
+          # Replace tag
+          sed -i "s/tag: .*/tag: ${{ github.sha }}/g" values.yaml
+          
+          # Check for changes
+          if [[ -n $(git status -s) ]]; then
+            git add values.yaml
+            git commit -m "Update image to ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+            git push origin HEAD:main
+          else
+            echo "No changes to commit"
+          fi

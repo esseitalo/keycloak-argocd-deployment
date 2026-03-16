@@ -1,0 +1,65 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: {{ .Values.postgres.image }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: postgres
+          containerPort: {{ .Values.database.port }}
+          protocol: TCP
+        env:
+        - name: POSTGRES_DB
+          value: "{{ .Values.postgres.database }}"
+        - name: POSTGRES_USER
+          value: "{{ .Values.postgres.username }}"
+        - name: POSTGRES_PASSWORD
+          value: "{{ .Values.postgres.password }}"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U {{ .Values.postgres.username }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U {{ .Values.postgres.username }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "{{ .Values.postgres.resources.requests.memory }}"
+            cpu: "{{ .Values.postgres.resources.requests.cpu }}"
+          limits:
+            memory: "{{ .Values.postgres.resources.limits.memory }}"
+            cpu: "{{ .Values.postgres.resources.limits.cpu }}"
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-storage
+        emptyDir: {}
+{{- end }}

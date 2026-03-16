@@ -1,0 +1,58 @@
+name: Infrastructure - Terraform
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra-terraform/**'
+  workflow_dispatch:
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  TF_VAR_client_id: ${{ secrets.AZURE_CLIENT_ID }}
+  TF_VAR_client_secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+  TF_VAR_gitops_repo_url: ${{ github.server_url }}/${{ github.repository }}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform:
+    name: Terraform Plan & Apply
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./infra-terraform
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RG }}" \
+            -backend-config="storage_account_name=${{ secrets.TF_BACKEND_SA }}" \
+            -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER }}" \
+            -backend-config="key=terraform.tfstate"
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && steps.plan.outcome == 'success'
+        run: terraform apply -auto-approve tfplan
