@@ -149,6 +149,35 @@ resource "helm_release" "argocd" {
           type = "LoadBalancer"
         }
       }
+      # Define the Application as an extra object managed by Helm
+      extraObjects = [
+        {
+          apiVersion = "argoproj.io/v1alpha1"
+          kind       = "Application"
+          metadata = {
+            name      = "keycloak"
+            namespace = "argocd"
+          }
+          spec = {
+            project = "default"
+            source = {
+              repoURL        = var.gitops_repo_url
+              targetRevision = "HEAD"
+              path           = "keycloak-gitops"
+            }
+            destination = {
+              server    = "https://kubernetes.default.svc"
+              namespace = "default"
+            }
+            syncPolicy = {
+              automated = {
+                prune    = true
+                selfHeal = true
+              }
+            }
+          }
+        }
+      ]
     })
   ]
 
@@ -156,37 +185,37 @@ resource "helm_release" "argocd" {
 }
 
 # Apply ArgoCD Application for Keycloak using kubectl
-resource "null_resource" "keycloak_app" {
-  triggers = {
-    repo_url = var.gitops_repo_url
-  }
-
-  provisioner "local-exec" {
-    command = <<EOT
-      az aks get-credentials --resource-group ${azurerm_resource_group.rg.name} --name ${azurerm_kubernetes_cluster.aks.name} --overwrite-existing
-      
-      cat <<EOF | kubectl apply -f -
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: keycloak
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: ${var.gitops_repo_url}
-    targetRevision: HEAD
-    path: keycloak-gitops
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: default
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-EOF
-    EOT
-  }
-
-  depends_on = [helm_release.argocd]
-}
+# resource "null_resource" "keycloak_app" {
+#   triggers = {
+#     repo_url = var.gitops_repo_url
+#   }
+# 
+#   provisioner "local-exec" {
+#     command = <<EOT
+#       az aks get-credentials --resource-group ${azurerm_resource_group.rg.name} --name ${azurerm_kubernetes_cluster.aks.name} --overwrite-existing
+#       
+#       cat <<EOF | kubectl apply -f -
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: keycloak
+#   namespace: argocd
+# spec:
+#   project: default
+#   source:
+#     repoURL: ${var.gitops_repo_url}
+#     targetRevision: HEAD
+#     path: keycloak-gitops
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: default
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+# EOF
+#     EOT
+#   }
+# 
+#   depends_on = [helm_release.argocd]
+# }
