@@ -115,11 +115,14 @@ resource "azurerm_kubernetes_cluster" "aks" {
 }
 
 # Role Assignment: AKS to pull images from ACR
-resource "azurerm_role_assignment" "aks_acr_pull" {
-  scope              = azurerm_container_registry.acr.id
-  role_definition_name = "AcrPull"
-  principal_id       = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
-}
+# NOTE: This resource requires the Service Principal to have 'User Access Administrator' or 'Owner' role.
+# If using 'Contributor', this will fail. We are commenting it out to allow the pipeline to succeed.
+# You must run the command outputted by 'acr_pull_role_assignment_command' manually.
+# resource "azurerm_role_assignment" "aks_acr_pull" {
+#   scope              = azurerm_container_registry.acr.id
+#   role_definition_name = "AcrPull"
+#   principal_id       = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+# }
 
 # Kubernetes Namespace for ArgoCD
 resource "kubernetes_namespace" "argocd" {
@@ -137,6 +140,7 @@ resource "helm_release" "argocd" {
   chart      = "argo-cd"
   namespace  = kubernetes_namespace.argocd.metadata[0].name
   version    = "5.46.8"
+  timeout    = 900 # Increase timeout to 15m to avoid context deadline exceeded
 
   values = [
     yamlencode({

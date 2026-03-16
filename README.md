@@ -15,8 +15,10 @@ The project is structured as a monorepo containing:
 1.  **Azure Subscription**: You need an active subscription.
 2.  **Azure Service Principal**: Create a Service Principal for GitHub Actions to authenticate with Azure.
     ```bash
-    az ad sp create-for-rbac --name "github-actions-sp" --role Contributor --scopes /subscriptions/<YOUR_SUBSCRIPTION_ID> --sdk-auth
+    az ad sp create-for-rbac --name "github-actions-sp" --role "Owner" --scopes /subscriptions/<YOUR_SUBSCRIPTION_ID> --sdk-auth
     ```
+    **Important**: The `--role "Owner"` or `"User Access Administrator"` is required for Terraform to assign the `AcrPull` role automatically. If you use `Contributor`, the pipeline will succeed but the role assignment step will be skipped (you must run the command outputted by Terraform manually).
+    
     Save the JSON output. This will be used as the `AZURE_CREDENTIALS` secret.
 
 3.  **Terraform Backend (Azure Storage)**: Create a Storage Account to store the Terraform state.

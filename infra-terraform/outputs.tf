@@ -35,3 +35,8 @@ output "acr_admin_password" {
   value       = azurerm_container_registry.acr.admin_password
   sensitive   = true
 }
+
+output "acr_pull_role_assignment_command" {
+  description = "Command to manually assign AcrPull role if SP lacks permissions"
+  value       = "az role assignment create --assignee ${azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id} --scope ${azurerm_container_registry.acr.id} --role AcrPull"
+}
