@@ -23,6 +23,9 @@ spec:
         - name: http
           containerPort: {{ .Values.keycloak.service.targetPort }}
           protocol: TCP
+        - name: management
+          containerPort: 9000
+          protocol: TCP
         env:
         - name: KC_DB
           value: "{{ .Values.database.vendor }}"
@@ -47,14 +50,14 @@ spec:
         readinessProbe:
           httpGet:
             path: /health/ready
-            port: http
+            port: management
           initialDelaySeconds: 60
           periodSeconds: 10
           failureThreshold: 3
         livenessProbe:
           httpGet:
             path: /health/live
-            port: http
+            port: management
           initialDelaySeconds: 90
           periodSeconds: 10
           failureThreshold: 3
