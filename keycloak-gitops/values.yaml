@@ -2,7 +2,7 @@
 keycloak:
   image:
     repository: acr9tfiqx.azurecr.io/keycloak-custom
-    tag: 6e1455151d62881e493f53a08e74d0b2ca271a82
+    tag: d2e68de8755f0a814404c7f88c5bf46779823d6a
     pullPolicy: IfNotPresent
   
   service:
