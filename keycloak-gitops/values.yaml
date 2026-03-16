@@ -1,8 +1,8 @@
 # Keycloak Configuration
 keycloak:
   image:
-    repository: keycloak/keycloak
-    tag: latest
+    repository: acr9tfiqx.azurecr.io/keycloak-custom
+    tag: e96aae711b246ddd480141e3496010370b1241f2
     pullPolicy: IfNotPresent
   
   service:
